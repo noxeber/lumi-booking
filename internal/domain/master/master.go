@@ -27,7 +27,7 @@ func CreateMaster(name string) (*Master, error) {
 
 func (m *Master) AddService(id uuid.UUID) error {
 	for _, service := range m.services {
-		if service.Compare(id) != 0 {
+		if service.Compare(id) == 0 {
 			return ErrServiceIDIsAlreadyExist
 		}
 	}
