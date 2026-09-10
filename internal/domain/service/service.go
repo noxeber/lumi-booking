@@ -28,9 +28,9 @@ func CreateService(name string, price decimal.Decimal, duration time.Duration, d
 	if price.IsNegative() {
 		return &Service{}, ErrNegativePrice
 	}
-	return &Service{id: uuid.NewV4(), price: price, duration: duration, description: description}, nil
+	return &Service{id: uuid.NewV4(), name: name, price: price, duration: duration, description: description}, nil
 }
 
 func RestoreService(id uuid.UUID, name string, price decimal.Decimal, duration time.Duration, description string) *Service {
-	return &Service{id: id, price: price, duration: duration, description: description}
+	return &Service{id: id, name: name, price: price, duration: duration, description: description}
 }
