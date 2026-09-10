@@ -6,7 +6,7 @@ import (
 	"uuid"
 )
 
-var ErrIsExist = errors.New("id is exist in slice ids of appointment")
+var ErrAlreadyExist = errors.New("id is exist in slice ids of appointment")
 
 type Appointment struct {
 	id         uuid.UUID
@@ -24,7 +24,7 @@ func NewAppointment(userID, masterID uuid.UUID, serviceIDs []uuid.UUID, timeStar
 func (a *Appointment) AddIDService(id uuid.UUID) error {
 	for _, exist := range a.serviceIDs {
 		if id == exist {
-			return ErrIsExist
+			return ErrAlreadyExist
 		}
 	}
 	a.serviceIDs = append(a.serviceIDs, id)
