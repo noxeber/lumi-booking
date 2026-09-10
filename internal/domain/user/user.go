@@ -14,7 +14,7 @@ type User struct {
 
 func CreateUser(name string) (*User, error) {
 	if name == "" {
-		return &User{}, ErrEmptyName
+		return nil, ErrEmptyName
 	}
 	return &User{id: uuid.NewV4(), name: name}, nil
 }

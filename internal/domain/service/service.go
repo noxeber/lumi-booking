@@ -23,10 +23,10 @@ type Service struct {
 
 func CreateService(name string, price decimal.Decimal, duration time.Duration, description string) (*Service, error) {
 	if len(name) < 4 {
-		return &Service{}, ErrInvalidName
+		return nil, ErrInvalidName
 	}
 	if price.IsNegative() {
-		return &Service{}, ErrNegativePrice
+		return nil, ErrNegativePrice
 	}
 	return &Service{id: uuid.NewV4(), name: name, price: price, duration: duration, description: description}, nil
 }

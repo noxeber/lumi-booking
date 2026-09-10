@@ -20,7 +20,7 @@ type Master struct {
 
 func CreateMaster(name string) (*Master, error) {
 	if strings.TrimSpace(name) == "" {
-		return &Master{}, ErrEmptyName
+		return nil, ErrEmptyName
 	}
 	return &Master{id: uuid.NewV4(), name: name}, nil
 }
