@@ -14,11 +14,12 @@ type Appointment struct {
 	masterID   uuid.UUID
 	serviceIDs []uuid.UUID
 	timeStart  time.Time
+	timeEnd    time.Time
 	createdAt  time.Time
 }
 
-func NewAppointment(userID, masterID uuid.UUID, serviceIDs []uuid.UUID, timeStart time.Time) (*Appointment, error) {
-	return &Appointment{id: uuid.NewV7(), userID: userID, masterID: masterID, serviceIDs: serviceIDs, timeStart: timeStart, createdAt: time.Now()}, nil
+func NewAppointment(userID, masterID uuid.UUID, serviceIDs []uuid.UUID, timeStart, timeEnd time.Time) (*Appointment, error) {
+	return &Appointment{id: uuid.NewV7(), userID: userID, masterID: masterID, serviceIDs: serviceIDs, timeStart: timeStart, timeEnd: timeEnd, createdAt: time.Now()}, nil
 }
 
 func (a *Appointment) AddIDService(id uuid.UUID) error {
@@ -29,4 +30,12 @@ func (a *Appointment) AddIDService(id uuid.UUID) error {
 	}
 	a.serviceIDs = append(a.serviceIDs, id)
 	return nil
+}
+
+func (a *Appointment) TimeStart() time.Time {
+	return a.timeStart
+}
+
+func (a *Appointment) TimeEnd() time.Time {
+	return a.timeEnd
 }

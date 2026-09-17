@@ -33,6 +33,11 @@ type Action struct {
 	typeAction ActionType
 }
 
+type Interval struct {
+	startTime time.Time
+	endTime   time.Time
+}
+
 func NewWorkDay(startTime, endTime time.Time) (*WorkDay, error) {
 	if !endTime.After(startTime) {
 		return nil, ErrStartAfterEnd
@@ -63,3 +68,35 @@ func (w *WorkDay) AddAction(action *Action) error {
 	w.actions = append(w.actions, *action)
 	return nil
 }
+
+func (w *WorkDay) Actions() []Action {
+	return w.actions
+}
+
+func (w *WorkDay) FreeIntervals() []Interval {
+	var free []Interval
+	current := w.startTime
+	for _, action := range w.actions {
+		if action.startTime.After(current) {
+			free = append(free, Interval{startTime: current, endTime: action.startTime})
+		}
+		if action.endTime.After(w.endTime) {
+			free = append(free, Interval{startTime: current, endTime: w.endTime})
+		}
+		current = action.endTime
+	}
+	if current.Before(w.endTime) {
+		free = append(free, Interval{startTime: current, endTime: w.endTime})
+	}
+	return free
+}
+
+func (a *Action) TypeAction() ActionType {
+	return a.typeAction
+}
+
+func (i Interval) StartTime() time.Time { return i.startTime }
+func (i Interval) EndTime() time.Time   { return i.endTime }
+
+func (a Action) StartTime() time.Time { return a.startTime }
+func (a Action) EndTime() time.Time   { return a.endTime }

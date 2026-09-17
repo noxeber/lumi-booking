@@ -34,3 +34,7 @@ func CreateService(name string, price decimal.Decimal, duration time.Duration, d
 func RestoreService(id uuid.UUID, name string, price decimal.Decimal, duration time.Duration, description string) *Service {
 	return &Service{id: id, name: name, price: price, duration: duration, description: description}
 }
+
+func (s Service) Duration() time.Duration {
+	return s.duration
+}
