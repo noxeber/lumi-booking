@@ -16,7 +16,7 @@ func TestCreateService(t *testing.T) {
 		duration := 45 * time.Minute
 		description := "Мужская и женская стрижка"
 
-		svc, err := CreateService(name, price, duration, description)
+		svc, err := CreateService(name, price, duration, 0, description)
 		if err != nil {
 			t.Fatalf("CreateService() unexpected error: %v", err)
 		}
@@ -50,7 +50,7 @@ func TestCreateService(t *testing.T) {
 	t.Run("creates service with name exactly 4 characters", func(t *testing.T) {
 		name := "Маст" // 4 байта для кириллицы это 2 символа, но len считает байты
 
-		svc, err := CreateService(name, decimal.NewFromInt(100), time.Hour, "")
+		svc, err := CreateService(name, decimal.NewFromInt(100), time.Hour, 0, "")
 		if err != nil {
 			t.Fatalf("CreateService() unexpected error: %v", err)
 		}
@@ -63,7 +63,7 @@ func TestCreateService(t *testing.T) {
 	t.Run("creates service with name exactly 4 bytes", func(t *testing.T) {
 		name := "Hair"
 
-		svc, err := CreateService(name, decimal.NewFromInt(100), time.Hour, "")
+		svc, err := CreateService(name, decimal.NewFromInt(100), time.Hour, 0, "")
 		if err != nil {
 			t.Fatalf("CreateService() unexpected error: %v", err)
 		}
@@ -88,7 +88,7 @@ func TestCreateService(t *testing.T) {
 
 		for _, tc := range testCases {
 			t.Run(tc.desc, func(t *testing.T) {
-				svc, err := CreateService(tc.name, decimal.NewFromInt(100), time.Hour, "")
+				svc, err := CreateService(tc.name, decimal.NewFromInt(100), time.Hour, 0, "")
 
 				if !errors.Is(err, ErrInvalidName) {
 					t.Errorf("CreateService(%q) error = %v, want %v", tc.name, err, ErrInvalidName)
@@ -109,7 +109,7 @@ func TestCreateService(t *testing.T) {
 		}
 
 		for _, price := range testCases {
-			svc, err := CreateService("Стрижка", price, time.Hour, "")
+			svc, err := CreateService("Стрижка", price, time.Hour, 0, "")
 
 			if !errors.Is(err, ErrNegativePrice) {
 				t.Errorf("CreateService(price=%v) error = %v, want %v", price, err, ErrNegativePrice)
@@ -124,7 +124,7 @@ func TestCreateService(t *testing.T) {
 	t.Run("accepts zero price", func(t *testing.T) {
 		price := decimal.Zero
 
-		svc, err := CreateService("Консультация", price, 15*time.Minute, "Бесплатная консультация")
+		svc, err := CreateService("Консультация", price, 15*time.Minute, 0, "Бесплатная консультация")
 		if err != nil {
 			t.Fatalf("CreateService() unexpected error: %v", err)
 		}
@@ -137,7 +137,7 @@ func TestCreateService(t *testing.T) {
 	t.Run("accepts positive price", func(t *testing.T) {
 		price := decimal.NewFromFloat(2500.99)
 
-		svc, err := CreateService("Окрашивание", price, 2*time.Hour, "")
+		svc, err := CreateService("Окрашивание", price, 2*time.Hour, 0, "")
 		if err != nil {
 			t.Fatalf("CreateService() unexpected error: %v", err)
 		}
@@ -150,7 +150,7 @@ func TestCreateService(t *testing.T) {
 	t.Run("accepts zero duration", func(t *testing.T) {
 		duration := time.Duration(0)
 
-		svc, err := CreateService("Тестовая услуга", decimal.NewFromInt(100), duration, "")
+		svc, err := CreateService("Тестовая услуга", decimal.NewFromInt(100), duration, 0, "")
 		if err != nil {
 			t.Fatalf("CreateService() unexpected error: %v", err)
 		}
@@ -163,7 +163,7 @@ func TestCreateService(t *testing.T) {
 	t.Run("accepts negative duration (no validation)", func(t *testing.T) {
 		duration := -1 * time.Hour
 
-		svc, err := CreateService("Тестовая услуга", decimal.NewFromInt(100), duration, "")
+		svc, err := CreateService("Тестовая услуга", decimal.NewFromInt(100), duration, 0, "")
 		if err != nil {
 			t.Fatalf("CreateService() unexpected error: %v", err)
 		}
@@ -174,7 +174,7 @@ func TestCreateService(t *testing.T) {
 	})
 
 	t.Run("creates service with empty description", func(t *testing.T) {
-		svc, err := CreateService("Стрижка", decimal.NewFromInt(1500), time.Hour, "")
+		svc, err := CreateService("Стрижка", decimal.NewFromInt(1500), time.Hour, 0, "")
 		if err != nil {
 			t.Fatalf("CreateService() unexpected error: %v", err)
 		}
@@ -187,7 +187,7 @@ func TestCreateService(t *testing.T) {
 	t.Run("creates service with long name", func(t *testing.T) {
 		name := "Очень длинное название услуги для салона красоты с множеством деталей и особенностей"
 
-		svc, err := CreateService(name, decimal.NewFromInt(5000), 3*time.Hour, "Подробное описание")
+		svc, err := CreateService(name, decimal.NewFromInt(5000), 3*time.Hour, 0, "Подробное описание")
 		if err != nil {
 			t.Fatalf("CreateService() unexpected error: %v", err)
 		}
@@ -200,7 +200,7 @@ func TestCreateService(t *testing.T) {
 	t.Run("creates service with high precision price", func(t *testing.T) {
 		price := decimal.RequireFromString("1234.567890123456789")
 
-		svc, err := CreateService("Премиум услуга", price, time.Hour, "")
+		svc, err := CreateService("Премиум услуга", price, time.Hour, 0, "")
 		if err != nil {
 			t.Fatalf("CreateService() unexpected error: %v", err)
 		}
@@ -211,12 +211,12 @@ func TestCreateService(t *testing.T) {
 	})
 
 	t.Run("generates unique IDs for different services", func(t *testing.T) {
-		svc1, err := CreateService("Услуга 1", decimal.NewFromInt(100), time.Hour, "")
+		svc1, err := CreateService("Услуга 1", decimal.NewFromInt(100), time.Hour, 0, "")
 		if err != nil {
 			t.Fatalf("CreateService() unexpected error: %v", err)
 		}
 
-		svc2, err := CreateService("Услуга 2", decimal.NewFromInt(200), time.Hour, "")
+		svc2, err := CreateService("Услуга 2", decimal.NewFromInt(200), time.Hour, 0, "")
 		if err != nil {
 			t.Fatalf("CreateService() unexpected error: %v", err)
 		}
@@ -228,7 +228,7 @@ func TestCreateService(t *testing.T) {
 
 	t.Run("validation errors take precedence", func(t *testing.T) {
 		// Both invalid name and negative price
-		svc, err := CreateService("ab", decimal.NewFromFloat(-100), time.Hour, "")
+		svc, err := CreateService("ab", decimal.NewFromFloat(-100), time.Hour, 0, "")
 
 		// Should get name error first
 		if !errors.Is(err, ErrInvalidName) {
@@ -243,13 +243,13 @@ func TestCreateService(t *testing.T) {
 
 func TestRestoreService(t *testing.T) {
 	t.Run("restores service with given ID", func(t *testing.T) {
-		id := uuid.NewV4()
+		id := uuid.New()
 		name := "Восстановленная услуга"
 		price := decimal.NewFromFloat(2000)
 		duration := 90 * time.Minute
 		description := "Описание восстановленной услуги"
 
-		svc := RestoreService(id, name, price, duration, description)
+		svc := RestoreService(id, name, price, duration, 0, description)
 
 		if svc == nil {
 			t.Fatal("RestoreService() returned nil")
@@ -277,9 +277,9 @@ func TestRestoreService(t *testing.T) {
 	})
 
 	t.Run("does not validate name", func(t *testing.T) {
-		id := uuid.NewV4()
+		id := uuid.New()
 
-		svc := RestoreService(id, "", decimal.NewFromInt(100), time.Hour, "")
+		svc := RestoreService(id, "", decimal.NewFromInt(100), time.Hour, 0, "")
 
 		if svc == nil {
 			t.Fatal("RestoreService() returned nil")
@@ -289,7 +289,7 @@ func TestRestoreService(t *testing.T) {
 			t.Errorf("name = %q, want empty string", svc.name)
 		}
 
-		svc2 := RestoreService(id, "ab", decimal.NewFromInt(100), time.Hour, "")
+		svc2 := RestoreService(id, "ab", decimal.NewFromInt(100), time.Hour, 0, "")
 
 		if svc2.name != "ab" {
 			t.Errorf("name = %q, want %q", svc2.name, "ab")
@@ -297,10 +297,10 @@ func TestRestoreService(t *testing.T) {
 	})
 
 	t.Run("does not validate price", func(t *testing.T) {
-		id := uuid.NewV4()
+		id := uuid.New()
 		negativePrice := decimal.NewFromFloat(-500)
 
-		svc := RestoreService(id, "Услуга", negativePrice, time.Hour, "")
+		svc := RestoreService(id, "Услуга", negativePrice, time.Hour, 0, "")
 
 		if svc == nil {
 			t.Fatal("RestoreService() returned nil")
@@ -314,7 +314,7 @@ func TestRestoreService(t *testing.T) {
 	t.Run("restores with zero UUID", func(t *testing.T) {
 		var zeroID uuid.UUID
 
-		svc := RestoreService(zeroID, "Услуга", decimal.NewFromInt(100), time.Hour, "")
+		svc := RestoreService(zeroID, "Услуга", decimal.NewFromInt(100), time.Hour, 0, "")
 
 		if svc.id != zeroID {
 			t.Errorf("id = %v, want zero UUID", svc.id)
@@ -322,9 +322,9 @@ func TestRestoreService(t *testing.T) {
 	})
 
 	t.Run("restores with empty description", func(t *testing.T) {
-		id := uuid.NewV4()
+		id := uuid.New()
 
-		svc := RestoreService(id, "Услуга", decimal.NewFromInt(100), time.Hour, "")
+		svc := RestoreService(id, "Услуга", decimal.NewFromInt(100), time.Hour, 0, "")
 
 		if svc.description != "" {
 			t.Errorf("description = %q, want empty string", svc.description)
@@ -332,13 +332,13 @@ func TestRestoreService(t *testing.T) {
 	})
 
 	t.Run("preserves all field values exactly", func(t *testing.T) {
-		id := uuid.NewV4()
+		id := uuid.New()
 		name := "Точное имя услуги"
 		price := decimal.RequireFromString("999.999999")
 		duration := 2*time.Hour + 30*time.Minute + 45*time.Second
 		description := "Точное описание с особыми символами: !@#$%^&*()"
 
-		svc := RestoreService(id, name, price, duration, description)
+		svc := RestoreService(id, name, price, duration, 0, description)
 
 		if svc.id != id {
 			t.Errorf("id = %v, want %v", svc.id, id)
@@ -362,7 +362,7 @@ func TestDuration(t *testing.T) {
 	t.Run("returns correct duration", func(t *testing.T) {
 		duration := 90 * time.Minute
 
-		svc, err := CreateService("Тестовая услуга", decimal.NewFromInt(1000), duration, "")
+		svc, err := CreateService("Тестовая услуга", decimal.NewFromInt(1000), duration, 0, "")
 		if err != nil {
 			t.Fatalf("CreateService() unexpected error: %v", err)
 		}
@@ -387,7 +387,7 @@ func TestDuration(t *testing.T) {
 	t.Run("returns duration from restored service", func(t *testing.T) {
 		duration := 2 * time.Hour
 
-		svc := RestoreService(uuid.NewV4(), "Услуга", decimal.NewFromInt(100), duration, "")
+		svc := RestoreService(uuid.New(), "Услуга", decimal.NewFromInt(100), duration, 0, "")
 
 		got := svc.Duration()
 
@@ -421,7 +421,7 @@ func TestServiceWorkflow(t *testing.T) {
 		description := "Классический маникюр с гель-лаком"
 
 		// Create service
-		created, err := CreateService(name, price, duration, description)
+		created, err := CreateService(name, price, duration, 0, description)
 		if err != nil {
 			t.Fatalf("CreateService() unexpected error: %v", err)
 		}
@@ -432,6 +432,7 @@ func TestServiceWorkflow(t *testing.T) {
 			created.name,
 			created.price,
 			created.duration,
+			created.bufferTime,
 			created.description,
 		)
 

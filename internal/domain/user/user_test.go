@@ -134,7 +134,7 @@ func TestCreateUser(t *testing.T) {
 
 func TestRestoreUser(t *testing.T) {
 	t.Run("restores user with given ID", func(t *testing.T) {
-		id := uuid.NewV4()
+		id := uuid.New()
 		name := "Восстановленный пользователь"
 
 		user := RestoreUser(id, name)
@@ -153,7 +153,7 @@ func TestRestoreUser(t *testing.T) {
 	})
 
 	t.Run("does not validate name", func(t *testing.T) {
-		id := uuid.NewV4()
+		id := uuid.New()
 
 		user := RestoreUser(id, "")
 
@@ -186,7 +186,7 @@ func TestRestoreUser(t *testing.T) {
 	})
 
 	t.Run("restores with empty name", func(t *testing.T) {
-		id := uuid.NewV4()
+		id := uuid.New()
 
 		user := RestoreUser(id, "")
 
@@ -196,7 +196,7 @@ func TestRestoreUser(t *testing.T) {
 	})
 
 	t.Run("restores with whitespace name", func(t *testing.T) {
-		id := uuid.NewV4()
+		id := uuid.New()
 		name := "   "
 
 		user := RestoreUser(id, name)
@@ -207,7 +207,7 @@ func TestRestoreUser(t *testing.T) {
 	})
 
 	t.Run("preserves all field values exactly", func(t *testing.T) {
-		id := uuid.NewV4()
+		id := uuid.New()
 		name := "Точное имя пользователя с особыми символами: !@#$%^&*()"
 
 		user := RestoreUser(id, name)
@@ -222,8 +222,8 @@ func TestRestoreUser(t *testing.T) {
 	})
 
 	t.Run("restores multiple users independently", func(t *testing.T) {
-		id1 := uuid.NewV4()
-		id2 := uuid.NewV4()
+		id1 := uuid.New()
+		id2 := uuid.New()
 		name1 := "Пользователь 1"
 		name2 := "Пользователь 2"
 

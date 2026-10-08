@@ -4,46 +4,70 @@ import (
 	"errors"
 	"sort"
 	"time"
+
 	"uuid"
 
 	"github.com/noxeber/lumi-booking/internal/domain/appointment"
-	schedule "github.com/noxeber/lumi-booking/internal/domain/workday"
+	"github.com/noxeber/lumi-booking/internal/domain/schedule"
 	"github.com/noxeber/lumi-booking/internal/ports"
 )
 
-var ErrIsDayOff = errors.New("workday is dayoff")
+var ErrIsDayOff = errors.New("schedule is day off")
 
 type TimeSlot struct {
-	startTime time.Time
-	endTime   time.Time
+	StartTime time.Time
+	EndTime   time.Time
+}
+
+type PeriodSlots struct {
+	Name  string
+	Slots []time.Time
 }
 
 type SlotService struct {
 	serviceRepo     ports.ServiceRepo
-	workdayRepo     ports.WorkdayRepo
+	scheduleRepo    ports.ScheduleRepo
 	appointmentRepo ports.AppointmentRepo
 }
 
-func (s *SlotService) GetAvaliableSlots(date time.Time, masterID uuid.UUID, serviceIDs []uuid.UUID) ([]TimeSlot, error) {
+func NewSlotService(serviceRepo ports.ServiceRepo, scheduleRepo ports.ScheduleRepo, appointmentRepo ports.AppointmentRepo) *SlotService {
+	return &SlotService{
+		serviceRepo:     serviceRepo,
+		scheduleRepo:    scheduleRepo,
+		appointmentRepo: appointmentRepo,
+	}
+}
+
+var ErrNoServicesSelected = errors.New("no services selected")
+
+func (s *SlotService) GetAvailableSlots(date time.Time, masterID uuid.UUID, serviceIDs []uuid.UUID) ([]PeriodSlots, error) {
+	if len(serviceIDs) == 0 {
+		return nil, ErrNoServicesSelected
+	}
+
 	var dur time.Duration
+	var maxBuffer time.Duration
 
 	for _, serviceID := range serviceIDs {
-		service, err := s.serviceRepo.GetByID(serviceID)
+		srv, err := s.serviceRepo.GetByID(serviceID)
 		if err != nil {
 			return nil, err
 		}
-		dur += service.Duration()
+		dur += srv.Duration()
+		if srv.BufferTime() > maxBuffer {
+			maxBuffer = srv.BufferTime()
+		}
 	}
 
-	workDay, err := s.workdayRepo.GetByDateAndMaster(date, masterID)
+	totalRequiredTime := dur + maxBuffer
+
+	sched, err := s.scheduleRepo.GetByDateAndMaster(date, masterID)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, action := range workDay.Actions() {
-		if typeAction := action.TypeAction(); typeAction == schedule.ActionTypeDayOff {
-			return nil, ErrIsDayOff
-		}
+	if sched.IsDayOff() {
+		return nil, ErrIsDayOff
 	}
 
 	appointments, err := s.appointmentRepo.GetByDateAndMaster(date, masterID)
@@ -51,56 +75,108 @@ func (s *SlotService) GetAvaliableSlots(date time.Time, masterID uuid.UUID, serv
 		return nil, err
 	}
 
-	return calculateSlots(appointments, workDay, dur), nil
+	windows := getFreeWindows(sched, appointments)
+	filteredWindows := filterWindows(windows, totalRequiredTime)
+	steps := generateSteps(filteredWindows, totalRequiredTime, 15*time.Minute)
+
+	return groupIntoPeriods(steps), nil
 }
 
-func calculateSlots(appointments []appointment.Appointment, workday schedule.WorkDay, totalDuration time.Duration) []TimeSlot {
-	if totalDuration <= 0 {
-		return nil
+func getFreeWindows(sched schedule.Schedule, appointments []appointment.Appointment) []TimeSlot {
+	type busyBlock struct {
+		start time.Time
+		end   time.Time
 	}
 
-	freeIntervals := workday.FreeIntervals()
-	var availableSlots []TimeSlot
+	var busyBlocks []busyBlock
 
-	for _, free := range freeIntervals {
-		currentStart := free.StartTime()
+	// Add breaks
+	for _, b := range sched.Breaks() {
+		busyBlocks = append(busyBlocks, busyBlock{start: b.StartTime(), end: b.EndTime()})
+	}
 
-		var overlapping []appointment.Appointment
-		for _, ap := range appointments {
-			if ap.TimeStart().Before(free.EndTime()) && ap.TimeEnd().After(free.StartTime()) {
-				overlapping = append(overlapping, ap)
-			}
-		}
-
-		sort.Slice(overlapping, func(i, j int) bool {
-			return overlapping[i].TimeStart().Before(overlapping[j].TimeStart())
-		})
-
-		for _, ap := range overlapping {
-			if ap.TimeStart().After(currentStart) {
-				windowDuration := ap.TimeStart().Sub(currentStart)
-				if windowDuration >= totalDuration {
-					availableSlots = append(availableSlots, TimeSlot{
-						startTime: currentStart,
-						endTime:   ap.TimeStart(),
-					})
-				}
-			}
-			if ap.TimeEnd().After(currentStart) {
-				currentStart = ap.TimeEnd()
-			}
-		}
-
-		if free.EndTime().After(currentStart) {
-			windowDuration := free.EndTime().Sub(currentStart)
-			if windowDuration >= totalDuration {
-				availableSlots = append(availableSlots, TimeSlot{
-					startTime: currentStart,
-					endTime:   free.EndTime(),
-				})
-			}
+	// Add appointments (including their buffer times)
+	for _, ap := range appointments {
+		if ap.Status() == appointment.StatusActive || ap.Status() == appointment.StatusCompleted {
+			busyBlocks = append(busyBlocks, busyBlock{
+				start: ap.TimeStart(),
+				end:   ap.TimeEnd().Add(ap.BufferTime()),
+			})
 		}
 	}
 
-	return availableSlots
+	// Sort blocks by start time
+	sort.Slice(busyBlocks, func(i, j int) bool {
+		return busyBlocks[i].start.Before(busyBlocks[j].start)
+	})
+
+	var freeWindows []TimeSlot
+	currentStart := sched.StartTime()
+
+	for _, block := range busyBlocks {
+		if block.start.After(currentStart) {
+			freeWindows = append(freeWindows, TimeSlot{StartTime: currentStart, EndTime: block.start})
+		}
+		if block.end.After(currentStart) {
+			currentStart = block.end
+		}
+	}
+
+	if currentStart.Before(sched.EndTime()) {
+		freeWindows = append(freeWindows, TimeSlot{StartTime: currentStart, EndTime: sched.EndTime()})
+	}
+
+	return freeWindows
+}
+
+func filterWindows(windows []TimeSlot, requiredTime time.Duration) []TimeSlot {
+	var filtered []TimeSlot
+	for _, w := range windows {
+		if w.EndTime.Sub(w.StartTime) >= requiredTime {
+			filtered = append(filtered, w)
+		}
+	}
+	return filtered
+}
+
+func generateSteps(windows []TimeSlot, requiredTime time.Duration, step time.Duration) []time.Time {
+	var steps []time.Time
+	for _, w := range windows {
+		current := w.StartTime
+		for current.Add(requiredTime).Before(w.EndTime) || current.Add(requiredTime).Equal(w.EndTime) {
+			steps = append(steps, current)
+			current = current.Add(step)
+		}
+	}
+	return steps
+}
+
+func groupIntoPeriods(steps []time.Time) []PeriodSlots {
+	morning := PeriodSlots{Name: "Утро"}
+	day := PeriodSlots{Name: "День"}
+	evening := PeriodSlots{Name: "Вечер"}
+
+	for _, step := range steps {
+		hour := step.Hour()
+		if hour < 12 {
+			morning.Slots = append(morning.Slots, step)
+		} else if hour < 17 {
+			day.Slots = append(day.Slots, step)
+		} else {
+			evening.Slots = append(evening.Slots, step)
+		}
+	}
+
+	var result []PeriodSlots
+	if len(morning.Slots) > 0 {
+		result = append(result, morning)
+	}
+	if len(day.Slots) > 0 {
+		result = append(result, day)
+	}
+	if len(evening.Slots) > 0 {
+		result = append(result, evening)
+	}
+
+	return result
 }
