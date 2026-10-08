@@ -23,10 +23,10 @@ func mustNewAppointmentWithTimes(
 ) *Appointment {
 	t.Helper()
 
-	userID := uuid.NewV7()
-	masterID := uuid.NewV7()
+	userID := uuid.New()
+	masterID := uuid.New()
 
-	appt, err := NewAppointment(userID, masterID, serviceIDs, start, end)
+	appt, err := NewAppointment(userID, masterID, serviceIDs, start, end, 0)
 	if err != nil {
 		t.Fatalf("NewAppointment() unexpected error: %v", err)
 	}
@@ -49,14 +49,14 @@ func containsUUID(ids []uuid.UUID, target uuid.UUID) bool {
 
 func TestNewAppointment(t *testing.T) {
 	t.Run("creates appointment with given fields", func(t *testing.T) {
-		userID := uuid.NewV7()
-		masterID := uuid.NewV7()
-		serviceIDs := []uuid.UUID{uuid.NewV7(), uuid.NewV7()}
+		userID := uuid.New()
+		masterID := uuid.New()
+		serviceIDs := []uuid.UUID{uuid.New(), uuid.New()}
 
 		start := time.Date(2026, time.September, 18, 12, 0, 0, 0, time.UTC)
 		end := start.Add(90 * time.Minute)
 
-		appt, err := NewAppointment(userID, masterID, serviceIDs, start, end)
+		appt, err := NewAppointment(userID, masterID, serviceIDs, start, end, 0)
 		if err != nil {
 			t.Fatalf("NewAppointment() unexpected error: %v", err)
 		}
@@ -99,6 +99,10 @@ func TestNewAppointment(t *testing.T) {
 		if appt.createdAt.IsZero() {
 			t.Error("createdAt is zero, want non-zero")
 		}
+
+		if appt.status != StatusActive {
+			t.Errorf("status = %v, want %v", appt.status, StatusActive)
+		}
 	})
 
 	t.Run("creates appointment with empty services", func(t *testing.T) {
@@ -116,7 +120,7 @@ func TestNewAppointment(t *testing.T) {
 			t.Fatalf("serviceIDs length = %d, want 0", len(appt.serviceIDs))
 		}
 
-		serviceID := uuid.NewV7()
+		serviceID := uuid.New()
 
 		if err := appt.AddIDService(serviceID); err != nil {
 			t.Fatalf("AddIDService() unexpected error: %v", err)
@@ -143,8 +147,8 @@ func TestNewAppointment(t *testing.T) {
 
 func TestAddIDService(t *testing.T) {
 	t.Run("adds new service id", func(t *testing.T) {
-		existingID := uuid.NewV7()
-		newID := uuid.NewV7()
+		existingID := uuid.New()
+		newID := uuid.New()
 
 		appt := mustNewAppointment(t, []uuid.UUID{existingID})
 
@@ -166,8 +170,8 @@ func TestAddIDService(t *testing.T) {
 	})
 
 	t.Run("returns ErrAlreadyExist for duplicate service id", func(t *testing.T) {
-		firstID := uuid.NewV7()
-		secondID := uuid.NewV7()
+		firstID := uuid.New()
+		secondID := uuid.New()
 
 		appt := mustNewAppointment(t, []uuid.UUID{firstID, secondID})
 
@@ -193,7 +197,7 @@ func TestAddIDService(t *testing.T) {
 	t.Run("adds service id to nil slice", func(t *testing.T) {
 		appt := mustNewAppointment(t, nil)
 
-		serviceID := uuid.NewV7()
+		serviceID := uuid.New()
 
 		if err := appt.AddIDService(serviceID); err != nil {
 			t.Fatalf("AddIDService() unexpected error: %v", err)
@@ -212,9 +216,9 @@ func TestAddIDService(t *testing.T) {
 		appt := mustNewAppointment(t, nil)
 
 		serviceIDs := []uuid.UUID{
-			uuid.NewV7(),
-			uuid.NewV7(),
-			uuid.NewV7(),
+			uuid.New(),
+			uuid.New(),
+			uuid.New(),
 		}
 
 		for _, serviceID := range serviceIDs {
@@ -293,17 +297,17 @@ func TestTimeEnd(t *testing.T) {
 }
 
 func TestAppointmentWorkflow(t *testing.T) {
-	userID := uuid.NewV7()
-	masterID := uuid.NewV7()
+	userID := uuid.New()
+	masterID := uuid.New()
 
-	firstServiceID := uuid.NewV7()
-	secondServiceID := uuid.NewV7()
-	thirdServiceID := uuid.NewV7()
+	firstServiceID := uuid.New()
+	secondServiceID := uuid.New()
+	thirdServiceID := uuid.New()
 
 	start := time.Date(2026, time.September, 20, 11, 0, 0, 0, time.UTC)
 	end := start.Add(time.Hour)
 
-	appt, err := NewAppointment(userID, masterID, []uuid.UUID{firstServiceID}, start, end)
+	appt, err := NewAppointment(userID, masterID, []uuid.UUID{firstServiceID}, start, end, 0)
 	if err != nil {
 		t.Fatalf("NewAppointment() unexpected error: %v", err)
 	}
@@ -338,4 +342,30 @@ func TestAppointmentWorkflow(t *testing.T) {
 	if !appt.TimeEnd().Equal(end) {
 		t.Errorf("TimeEnd() = %v, want %v", appt.TimeEnd(), end)
 	}
+}
+
+func TestAppointmentStatus(t *testing.T) {
+	t.Run("returns initial status", func(t *testing.T) {
+		appt := mustNewAppointment(t, []uuid.UUID{uuid.New()})
+
+		if appt.Status() != StatusActive {
+			t.Errorf("Status() = %v, want %v", appt.Status(), StatusActive)
+		}
+	})
+}
+
+func TestAppointmentBufferTime(t *testing.T) {
+	t.Run("returns correct buffer time", func(t *testing.T) {
+		userID := uuid.New()
+		masterID := uuid.New()
+		start := time.Now()
+		end := start.Add(time.Hour)
+		buffer := 15 * time.Minute
+
+		appt, _ := NewAppointment(userID, masterID, []uuid.UUID{uuid.New()}, start, end, buffer)
+
+		if appt.BufferTime() != buffer {
+			t.Errorf("BufferTime() = %v, want %v", appt.BufferTime(), buffer)
+		}
+	})
 }

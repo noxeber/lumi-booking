@@ -100,7 +100,7 @@ func TestCreateMaster(t *testing.T) {
 func TestAddService(t *testing.T) {
 	t.Run("adds new service successfully", func(t *testing.T) {
 		master, _ := CreateMaster("Тестовый мастер")
-		serviceID := uuid.NewV4()
+		serviceID := uuid.New()
 
 		err := master.AddService(serviceID)
 		if err != nil {
@@ -111,7 +111,7 @@ func TestAddService(t *testing.T) {
 			t.Fatalf("services length = %d, want 1", len(master.services))
 		}
 
-		if master.services[0].Compare(serviceID) != 0 {
+		if master.services[0] != serviceID {
 			t.Errorf("services[0] = %v, want %v", master.services[0], serviceID)
 		}
 	})
@@ -119,9 +119,9 @@ func TestAddService(t *testing.T) {
 	t.Run("adds multiple different services", func(t *testing.T) {
 		master, _ := CreateMaster("Тестовый мастер")
 		serviceIDs := []uuid.UUID{
-			uuid.NewV4(),
-			uuid.NewV4(),
-			uuid.NewV4(),
+			uuid.New(),
+			uuid.New(),
+			uuid.New(),
 		}
 
 		for _, serviceID := range serviceIDs {
@@ -138,7 +138,7 @@ func TestAddService(t *testing.T) {
 		for _, serviceID := range serviceIDs {
 			found := false
 			for _, s := range master.services {
-				if s.Compare(serviceID) == 0 {
+				if s == serviceID {
 					found = true
 					break
 				}
@@ -151,7 +151,7 @@ func TestAddService(t *testing.T) {
 
 	t.Run("returns error when adding duplicate service", func(t *testing.T) {
 		master, _ := CreateMaster("Тестовый мастер")
-		serviceID := uuid.NewV4()
+		serviceID := uuid.New()
 
 		err := master.AddService(serviceID)
 		if err != nil {
@@ -170,9 +170,9 @@ func TestAddService(t *testing.T) {
 
 	t.Run("detects duplicate among multiple services", func(t *testing.T) {
 		master, _ := CreateMaster("Тестовый мастер")
-		serviceID1 := uuid.NewV4()
-		serviceID2 := uuid.NewV4()
-		serviceID3 := uuid.NewV4()
+		serviceID1 := uuid.New()
+		serviceID2 := uuid.New()
+		serviceID3 := uuid.New()
 
 		master.AddService(serviceID1)
 		master.AddService(serviceID2)
@@ -215,7 +215,7 @@ func TestAddService(t *testing.T) {
 func TestRemoveService(t *testing.T) {
 	t.Run("removes existing service", func(t *testing.T) {
 		master, _ := CreateMaster("Тестовый мастер")
-		serviceID := uuid.NewV4()
+		serviceID := uuid.New()
 
 		master.AddService(serviceID)
 		if len(master.services) != 1 {
@@ -231,9 +231,9 @@ func TestRemoveService(t *testing.T) {
 
 	t.Run("removes service from multiple services", func(t *testing.T) {
 		master, _ := CreateMaster("Тестовый мастер")
-		serviceID1 := uuid.NewV4()
-		serviceID2 := uuid.NewV4()
-		serviceID3 := uuid.NewV4()
+		serviceID1 := uuid.New()
+		serviceID2 := uuid.New()
+		serviceID3 := uuid.New()
 
 		master.AddService(serviceID1)
 		master.AddService(serviceID2)
@@ -246,17 +246,17 @@ func TestRemoveService(t *testing.T) {
 		}
 
 		for _, s := range master.services {
-			if s.Compare(serviceID2) == 0 {
+			if s == serviceID2 {
 				t.Error("services should not contain removed service")
 			}
 		}
 
 		found1, found3 := false, false
 		for _, s := range master.services {
-			if s.Compare(serviceID1) == 0 {
+			if s == serviceID1 {
 				found1 = true
 			}
-			if s.Compare(serviceID3) == 0 {
+			if s == serviceID3 {
 				found3 = true
 			}
 		}
@@ -271,8 +271,8 @@ func TestRemoveService(t *testing.T) {
 
 	t.Run("does nothing when removing non-existent service", func(t *testing.T) {
 		master, _ := CreateMaster("Тестовый мастер")
-		existingID := uuid.NewV4()
-		nonExistentID := uuid.NewV4()
+		existingID := uuid.New()
+		nonExistentID := uuid.New()
 
 		master.AddService(existingID)
 
@@ -282,14 +282,14 @@ func TestRemoveService(t *testing.T) {
 			t.Errorf("services length = %d, want 1", len(master.services))
 		}
 
-		if master.services[0].Compare(existingID) != 0 {
+		if master.services[0] != existingID {
 			t.Error("existing service should remain unchanged")
 		}
 	})
 
 	t.Run("does nothing when removing from empty list", func(t *testing.T) {
 		master, _ := CreateMaster("Тестовый мастер")
-		serviceID := uuid.NewV4()
+		serviceID := uuid.New()
 
 		master.RemoveService(serviceID)
 
@@ -300,7 +300,7 @@ func TestRemoveService(t *testing.T) {
 
 	t.Run("can remove and re-add same service", func(t *testing.T) {
 		master, _ := CreateMaster("Тестовый мастер")
-		serviceID := uuid.NewV4()
+		serviceID := uuid.New()
 
 		master.AddService(serviceID)
 		master.RemoveService(serviceID)
@@ -349,9 +349,9 @@ func TestMasterWorkflow(t *testing.T) {
 			t.Errorf("name = %q, want %q", master.name, name)
 		}
 
-		serviceID1 := uuid.NewV4()
-		serviceID2 := uuid.NewV4()
-		serviceID3 := uuid.NewV4()
+		serviceID1 := uuid.New()
+		serviceID2 := uuid.New()
+		serviceID3 := uuid.New()
 
 		err = master.AddService(serviceID1)
 		if err != nil {
@@ -388,10 +388,10 @@ func TestMasterWorkflow(t *testing.T) {
 
 		found2, found3 := false, false
 		for _, s := range master.services {
-			if s.Compare(serviceID2) == 0 {
+			if s == serviceID2 {
 				found2 = true
 			}
-			if s.Compare(serviceID3) == 0 {
+			if s == serviceID3 {
 				found3 = true
 			}
 		}

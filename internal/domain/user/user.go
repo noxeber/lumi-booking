@@ -16,7 +16,7 @@ func CreateUser(name string) (*User, error) {
 	if name == "" {
 		return nil, ErrEmptyName
 	}
-	return &User{id: uuid.NewV4(), name: name}, nil
+	return &User{id: uuid.New(), name: name}, nil
 }
 
 func RestoreUser(id uuid.UUID, name string) *User {
