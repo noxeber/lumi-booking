@@ -2,9 +2,9 @@ package master
 
 import (
 	"errors"
+	"github.com/google/uuid"
 	"slices"
 	"strings"
-	"uuid"
 )
 
 var (

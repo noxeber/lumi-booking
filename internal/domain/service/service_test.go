@@ -2,9 +2,9 @@ package service
 
 import (
 	"errors"
+	"github.com/google/uuid"
 	"testing"
 	"time"
-	"uuid"
 
 	"github.com/shopspring/decimal"
 )

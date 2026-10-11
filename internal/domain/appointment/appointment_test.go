@@ -2,9 +2,9 @@ package appointment
 
 import (
 	"errors"
+	"github.com/google/uuid"
 	"testing"
 	"time"
-	"uuid"
 )
 
 func mustNewAppointment(t *testing.T, serviceIDs []uuid.UUID) *Appointment {

@@ -2,8 +2,8 @@ package master
 
 import (
 	"errors"
+	"github.com/google/uuid"
 	"testing"
-	"uuid"
 )
 
 func TestCreateMaster(t *testing.T) {

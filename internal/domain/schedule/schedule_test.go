@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"uuid"
+	"github.com/google/uuid"
 )
 
 func TestNewSchedule(t *testing.T) {

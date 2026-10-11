@@ -2,8 +2,8 @@ package appointment
 
 import (
 	"errors"
+	"github.com/google/uuid"
 	"time"
-	"uuid"
 )
 
 var ErrAlreadyExist = errors.New("id is exist in slice ids of appointment")
@@ -67,4 +67,8 @@ func (a *Appointment) TimeStart() time.Time {
 
 func (a *Appointment) TimeEnd() time.Time {
 	return a.timeEnd
+}
+
+func (a *Appointment) CancelByClient() {
+	a.status = StatusCancelledByClient
 }

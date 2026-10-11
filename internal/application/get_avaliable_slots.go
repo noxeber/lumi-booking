@@ -5,7 +5,7 @@ import (
 	"sort"
 	"time"
 
-	"uuid"
+	"github.com/google/uuid"
 
 	"github.com/noxeber/lumi-booking/internal/domain/appointment"
 	"github.com/noxeber/lumi-booking/internal/domain/schedule"
@@ -66,6 +66,10 @@ func (s *SlotService) GetAvailableSlots(date time.Time, masterID uuid.UUID, serv
 		return nil, err
 	}
 
+	if sched == nil {
+		return nil, errors.New("schedule not found")
+	}
+
 	if sched.IsDayOff() {
 		return nil, ErrIsDayOff
 	}
@@ -75,7 +79,7 @@ func (s *SlotService) GetAvailableSlots(date time.Time, masterID uuid.UUID, serv
 		return nil, err
 	}
 
-	windows := getFreeWindows(sched, appointments)
+	windows := getFreeWindows(*sched, appointments)
 	filteredWindows := filterWindows(windows, totalRequiredTime)
 	steps := generateSteps(filteredWindows, totalRequiredTime, 15*time.Minute)
 

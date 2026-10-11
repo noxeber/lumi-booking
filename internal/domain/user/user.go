@@ -2,7 +2,7 @@ package user
 
 import (
 	"errors"
-	"uuid"
+	"github.com/google/uuid"
 )
 
 var ErrEmptyName = errors.New("client name is empty")

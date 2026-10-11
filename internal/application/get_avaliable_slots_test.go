@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"uuid"
+	"github.com/google/uuid"
 
 	"github.com/noxeber/lumi-booking/internal/domain/appointment"
 	"github.com/noxeber/lumi-booking/internal/domain/schedule"

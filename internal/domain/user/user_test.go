@@ -2,8 +2,8 @@ package user
 
 import (
 	"errors"
+	"github.com/google/uuid"
 	"testing"
-	"uuid"
 )
 
 func TestCreateUser(t *testing.T) {

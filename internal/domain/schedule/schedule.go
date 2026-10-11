@@ -2,8 +2,8 @@ package schedule
 
 import (
 	"errors"
+	"github.com/google/uuid"
 	"time"
-	"uuid"
 )
 
 var (
